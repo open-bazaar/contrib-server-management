@@ -7,8 +7,7 @@ lazy from pathlib import Path
 lazy from typing import Any
 
 from bazaar_compute_node.boot import defaults
-from bazaar_contrib_server_migrations import MODULE
-from hosts import answers, document, host, layout, legacy, ports, query
+from hosts import answers, document, host, legacy, ports, query, tables
 
 
 def configured(payload: dict[str, Any]) -> dict[str, object]:
@@ -16,7 +15,8 @@ def configured(payload: dict[str, Any]) -> dict[str, object]:
         entry["entry"]: entry.get("config", {})
         for package in payload["contribs"]
         for entry in package.get("enabled", ())
-        if entry["entry"] != "server-management"
+        # the entries that carry over ~/.bcs's settings
+        if entry["entry"] not in ("http", "server-database")
     }
 
 
@@ -28,12 +28,12 @@ async def test_the_server_beside_the_node_leaves_the_node_as_it_was(tmp_path: Pa
     async with host(home):
         assert (await answers(published)).startswith(b"HTTP/")
         payload = await asyncio.to_thread(document, home)
-        node = await asyncio.to_thread(layout, home / ".bcn" / "bcn.sqlite3")
+        node = await asyncio.to_thread(tables, home / ".bcn" / "bcn.sqlite3")
         ledgers = [
             {package for (package,) in await asyncio.to_thread(query, path, packages)}
             for path in (home / ".bcn" / "bcn.sqlite3", home / ".bcn" / "bcs.sqlite3")
         ]
     assert configured(payload) == configured(await asyncio.to_thread(defaults))
-    assert not set(MODULE.tables) & node.keys()
+    assert not await asyncio.to_thread(tables, home / ".bcs" / "bcs.sqlite3") & node
     assert ledgers[0] and not ledgers[0] & ledgers[1]
     assert ledgers[1] == {"bazaar-contrib-server-migrations"}

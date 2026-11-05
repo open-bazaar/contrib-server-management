@@ -176,12 +176,11 @@ def verify(directory: Path, pypi: bool) -> None:
                     "-c",
                     (
                         "import importlib.metadata as m; "
-                        "from bazaar_core import Contrib; "
                         f"d=m.distribution({manifest['name']!r}); "
                         f"assert d.version == {manifest['version']!r}; "
                         "entries=[e for e in d.entry_points "
-                        "if e.group == 'bazaar_compute_node.contribs']; "
-                        "assert entries and all(isinstance(e.load(), Contrib) for e in entries); "
+                        "if e.group == 'bazaar_compute_node.defaults']; "
+                        "assert entries and all(e.load()()['contribs'] for e in entries); "
                         "print(d.metadata['Name'], d.version, [e.name for e in entries])"
                     ),
                 ],
