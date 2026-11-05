@@ -17,8 +17,6 @@ lazy from typing import Any
 
 import tomli_w
 
-lazy from bazaar_contrib_server_management import ServerConfig
-
 
 @asynccontextmanager
 async def host(home: Path) -> AsyncIterator[None]:
@@ -126,13 +124,13 @@ def document(home: Path) -> dict[str, Any]:
     return tomllib.loads((home / ".bcn" / "config.toml").read_text(encoding="utf-8"))
 
 
-def settings(home: Path) -> ServerConfig:
-    return next(
-        ServerConfig.model_validate(entry.get("config", {}))
+def entries(home: Path) -> dict[str, dict[str, Any]]:
+    """Each enabled entry's configuration as the host saved it."""
+    return {
+        entry["entry"]: entry.get("config", {})
         for package in document(home)["contribs"]
         for entry in package.get("enabled", ())
-        if entry["entry"] == "server-management"
-    )
+    }
 
 
 @contextmanager
@@ -166,3 +164,12 @@ def layout(path: Path) -> dict[str, tuple[str, str | None, int | None]]:
                 "SELECT type, name, sql FROM sqlite_master"
             ).fetchall()
         }
+
+
+def tables(path: Path) -> set[str]:
+    """The database's own tables, without SQLite's internal ones."""
+    return {
+        name
+        for name, (kind, _, _) in layout(path).items()
+        if kind == "table" and not name.startswith("sqlite_")
+    }
