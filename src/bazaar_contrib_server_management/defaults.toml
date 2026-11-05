@@ -1,0 +1,59 @@
+version = "5"
+contrib_indexes = [
+    "resource://bazaar_contrib_manager/catalog.json",
+    "resource://bazaar_contrib_manager/open_bazaar_index.json",
+]
+
+[[contribs]]
+package = "bazaar-contrib-config-filesystem~=0.3.0rc1"
+enabled = []
+
+[[contribs]]
+package = "bazaar-contrib-invoke~=0.3.0rc1"
+[[contribs.enabled]]
+entry = "commands"
+
+[[contribs]]
+package = "bazaar-contrib-manager~=0.3.0rc1"
+[[contribs.enabled]]
+entry = "contrib-manager"
+
+[[contribs]]
+package = "bazaar-contrib-logging~=0.3.0rc1"
+[[contribs.enabled]]
+entry = "logging"
+
+[[contribs]]
+package = "bazaar-contrib-timer-wheel~=0.3.0rc1"
+[[contribs.enabled]]
+entry = "timer-wheel"
+
+[[contribs]]
+package = "bazaar-contrib-storage~=0.3.0rc1"
+enabled = []
+
+[[contribs]]
+package = "bazaar-contrib-sqlite~=0.3.0rc1"
+enabled = []
+
+[[contribs]]
+package = "bazaar-contrib-schema~=0.3.0rc1"
+enabled = []
+
+[[contribs]]
+package = "bazaar-contrib-server-migrations~=0.3.0rc1"
+enabled = []
+
+[[contribs]]
+package = "bazaar-contrib-http~=0.3.0rc1"
+enabled = []
+
+[[contribs]]
+package = "bazaar-contrib-server-management~=0.3.0rc1"
+[[contribs.enabled]]
+entry = "server-management"
+[contribs.enabled.config]
+listen = "127.0.0.1:8765"
+session_minutes = 10
+retention_days = 30
+storage = "sqlite"
