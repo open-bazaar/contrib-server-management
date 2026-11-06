@@ -1,6 +1,6 @@
 # bazaar-contrib-server-management
 
-The default configuration of a Bazaar Compute server. Installed beside `bazaar-compute`, it gives a new host the server's entries: `http`, the server's own database `server-database` and its history `server-migrations`, the server itself `server` with its two themes `server-theme-night` and `server-theme-day`, its overview `server-overview`, and the login `server-access`, each keeping its own settings.
+The default configuration of a Bazaar Compute server. Installed beside `bazaar-compute`, it gives a new host the server's entries: `http`, the server's own database `server-database` and its history `server-migrations`, the server itself `server` with its two themes `server-theme-night` and `server-theme-day`, its overview `server-overview`, the login `server-access`, and the computers `server-computer` with the relay between replicas `server-relay-memory`, each keeping its own settings.
 
 ```sh
 uv tool install bazaar-compute --with bazaar-contrib-server-management

@@ -69,16 +69,23 @@ entry = "server-theme-night"
 entry = "server-theme-day"
 
 [[contribs]]
-package = "bazaar-contrib-server-overview~=0.3.0rc1"
+package = "bazaar-contrib-server-overview~=0.3.0rc2"
 [[contribs.enabled]]
 entry = "server-overview"
 
 [[contribs]]
-package = "bazaar-contrib-server-access~=0.3.0rc3"
+package = "bazaar-contrib-server-access~=0.3.0rc4"
 [[contribs.enabled]]
 entry = "server-access"
 [contribs.enabled.config]
 session_minutes = 10
+
+[[contribs]]
+package = "bazaar-contrib-server-computer~=0.3.0rc1"
+[[contribs.enabled]]
+entry = "server-relay-memory"
+[[contribs.enabled]]
+entry = "server-computer"
 
 [[contribs]]
 package = "bazaar-contrib-server-management~=0.3.0rc1"
