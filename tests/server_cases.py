@@ -16,6 +16,7 @@ async def test_a_new_server_serves_with_the_original_defaults(tmp_path: Path):
         assert configured["http"]["listen"] == "127.0.0.1:8765"
         assert configured["server-database"]["storage"] == "sqlite"
         assert configured["server-access"]["session_minutes"] == 10
+        assert "server-overview" in configured
 
 
 async def test_a_02_server_keeps_its_settings(tmp_path: Path):

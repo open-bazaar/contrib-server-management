@@ -60,7 +60,7 @@ package = "bazaar-contrib-server-migrations~=0.3.0rc1"
 entry = "server-migrations"
 
 [[contribs]]
-package = "bazaar-contrib-server~=0.3.0rc2"
+package = "bazaar-contrib-server~=0.3.0rc3"
 [[contribs.enabled]]
 entry = "server"
 [[contribs.enabled]]
@@ -69,7 +69,12 @@ entry = "server-theme-night"
 entry = "server-theme-day"
 
 [[contribs]]
-package = "bazaar-contrib-server-access~=0.3.0rc1"
+package = "bazaar-contrib-server-overview~=0.3.0rc1"
+[[contribs.enabled]]
+entry = "server-overview"
+
+[[contribs]]
+package = "bazaar-contrib-server-access~=0.3.0rc3"
 [[contribs.enabled]]
 entry = "server-access"
 [contribs.enabled.config]
