@@ -1,6 +1,6 @@
 [project]
 name = "bazaar-contrib-server-management"
-version = "0.3.0rc2"
+version = "0.3.0rc3"
 description = "The default configuration of a Bazaar Compute server"
 readme = "README.md"
 license = "Apache-2.0"
