@@ -1,18 +1,15 @@
-"""Run the installed host and the published 0.2.3 server, and read what they leave."""
+"""Run the installed host and the published 0.2.3 server."""
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager, closing, contextmanager
+from contextlib import asynccontextmanager
 lazy import asyncio
 lazy import os
-lazy import shutil
 lazy import socket
-lazy import sqlite3
 lazy import sys
 lazy import tomllib
-lazy from collections.abc import AsyncIterator, Iterator
+lazy from collections.abc import AsyncIterator
 lazy from pathlib import Path
-lazy from tempfile import TemporaryDirectory
 lazy from typing import Any
 
 import tomli_w
@@ -112,14 +109,6 @@ async def legacy(home: Path, port: int) -> None:
         await process.wait()
 
 
-def files(root: Path) -> dict[str, bytes]:
-    return {
-        path.relative_to(root).as_posix(): path.read_bytes()
-        for path in root.rglob("*")
-        if path.is_file()
-    }
-
-
 def document(home: Path) -> dict[str, Any]:
     return tomllib.loads((home / ".bcn" / "config.toml").read_text(encoding="utf-8"))
 
@@ -130,46 +119,4 @@ def entries(home: Path) -> dict[str, dict[str, Any]]:
         entry["entry"]: entry.get("config", {})
         for package in document(home)["contribs"]
         for entry in package.get("enabled", ())
-    }
-
-
-@contextmanager
-def reading(path: Path) -> Iterator[sqlite3.Connection]:
-    """Open a copy, leaving the database and its write-ahead log as they are."""
-    with TemporaryDirectory() as directory:
-        for suffix in ("", "-wal"):
-            if (source := Path(f"{path}{suffix}")).exists():
-                shutil.copyfile(source, Path(directory) / f"{path.name}{suffix}")
-        with closing(sqlite3.connect(Path(directory) / path.name)) as connection:
-            yield connection
-
-
-def query(path: Path, sql: str) -> list[tuple[Any, ...]]:
-    with reading(path) as connection:
-        return [tuple(row) for row in connection.execute(sql)]
-
-
-def layout(path: Path) -> dict[str, tuple[str, str | None, int | None]]:
-    """Each schema object with its definition, and each table with its row count."""
-    with reading(path) as connection:
-        return {
-            name: (
-                kind,
-                sql,
-                connection.execute(f'SELECT count(*) FROM "{name}"').fetchone()[0]
-                if kind == "table"
-                else None,
-            )
-            for kind, name, sql in connection.execute(
-                "SELECT type, name, sql FROM sqlite_master"
-            ).fetchall()
-        }
-
-
-def tables(path: Path) -> set[str]:
-    """The database's own tables, without SQLite's internal ones."""
-    return {
-        name
-        for name, (kind, _, _) in layout(path).items()
-        if kind == "table" and not name.startswith("sqlite_")
     }

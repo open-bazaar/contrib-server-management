@@ -26,6 +26,9 @@ def defaults() -> dict[str, Any]:
             "storage": storage,
             "storage_options": payload.get(storage, {}),
         },
+        "server-access": {"session_minutes": payload["session_minutes"]}
+        if "session_minutes" in payload
+        else {},
     }
     for package in document["contribs"]:
         for entry in package.get("enabled", ()):
