@@ -90,7 +90,7 @@ wheels = [
 
 [[package]]
 name = "bazaar-contrib-server-management"
-version = "0.3.0rc3"
+version = "0.3.0rc4"
 source = { editable = "." }
 
 [package.dev-dependencies]
