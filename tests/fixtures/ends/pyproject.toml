@@ -1,0 +1,23 @@
+[project]
+name = "two-ends"
+version = "0.1.0"
+description = "What the two-end acceptance drives on the server and on the node"
+requires-python = ">=3.15"
+dependencies = [
+    "bazaar-core~=0.3.0rc1",
+    "bazaar-contrib-audit~=0.3.0rc1",
+    "bazaar-contrib-sidecar~=0.3.0rc7",
+    "bazaar-contrib-server~=0.3.0rc3",
+    "bazaar-contrib-server-computer~=0.3.0rc1",
+]
+
+[project.entry-points."bazaar_compute_node.contribs"]
+ends-node = "two_ends.node:speaker"
+ends-server = "two_ends.server:probe"
+
+[project.entry-points."bazaar_compute_node.remotes"]
+ends = "two_ends.node:remote"
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14.0"]
+build-backend = "uv_build"

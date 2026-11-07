@@ -41,10 +41,15 @@ extend-select = ["ASYNC"]
 
 [dependency-groups]
 dev = [
-    "bazaar-compute~=0.3.0rc17",
+    "bazaar-compute[node]~=0.3.0rc18",
     "blockbuster>=1.5.29,<1.6",
+    "httpx>=0.28.0,<1",
     "pyright==1.1.414",
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
     "ruff>=0.9.0",
+    "two-ends",
 ]
+
+[tool.uv.sources]
+two-ends = { path = "tests/fixtures/ends", editable = true }
