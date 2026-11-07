@@ -88,5 +88,10 @@ entry = "server-relay-memory"
 entry = "server-computer"
 
 [[contribs]]
+package = "bazaar-contrib-server-agent~=0.3.0rc1"
+[[contribs.enabled]]
+entry = "server-agent"
+
+[[contribs]]
 package = "bazaar-contrib-server-management~=0.3.0rc1"
 enabled = []
