@@ -32,6 +32,7 @@ async def test_installed_server_runs_alone_and_beside_the_node(tmp_path: Path):
         (
             ("*.whl", "bazaar-compute~=0.3.0rc17", "server_cases.py"),
             ("*.whl", "bazaar-compute[node]~=0.3.0rc17", "node_cases.py"),
+            ("*.whl", "bazaar-compute[node]~=0.3.0rc18", "ends_cases.py"),
         )
     ):
         (artifact,) = await asyncio.to_thread(list, output.glob(suffix))
@@ -51,6 +52,7 @@ async def test_installed_server_runs_alone_and_beside_the_node(tmp_path: Path):
                 "pytest",
                 "pytest-asyncio",
                 "blockbuster>=1.5.29,<1.6",
+                "httpx>=0.28.0,<1",
             ),
             (
                 str(python),
