@@ -19,6 +19,7 @@ async def test_a_new_server_serves_with_the_original_defaults(tmp_path: Path):
         assert "server-overview" in configured
         assert "server-computer" in configured
         assert "server-relay-memory" in configured
+        assert "server-agent" in configured
 
 
 async def test_a_02_server_keeps_its_settings(tmp_path: Path):
