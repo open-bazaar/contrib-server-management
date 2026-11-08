@@ -50,15 +50,30 @@ node = [
 
 [[package]]
 name = "bazaar-contrib-audit"
-version = "0.3.0rc18"
+version = "0.3.0rc21"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bazaar-core" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/dc/3c/b818869e0ecdba8f499d073443dbd071ca6c0ec15db11f2c30d3c59ee0d6/bazaar_contrib_audit-0.3.0rc18.tar.gz", hash = "sha256:497503624f9aeda7ade34fbb350bd4466d0963fb8387954df882de2cb5f20f7a", size = 6355, upload-time = "2026-11-07T03:38:17.426Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7b/76/ffe08c92392a3e10441417d245009355c83b4aa28a96e15c85bf305c0275/bazaar_contrib_audit-0.3.0rc21.tar.gz", hash = "sha256:71c0b7a57f5c4846d8a473b8f653e075e9d9a97ff7f53330fee50eca48645912", size = 6359, upload-time = "2026-11-08T05:07:14.471Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/06/dc/f1d1341a24beb96a4a3d5c8ced9b989b73649c5881a4be0a1681f88461fc/bazaar_contrib_audit-0.3.0rc18-py3-none-any.whl", hash = "sha256:0ed8ead70c680a9857ea00a47e7e16ad54ec852fbbd86d4b3ab6f7d13a1b789d", size = 7558, upload-time = "2026-11-07T03:38:16.583Z" },
+    { url = "https://files.pythonhosted.org/packages/fd/5e/fe9b4ec1f48e7b7b0ae7602273e2a4e2a210f2b7898988b0eb95ac9bd9da/bazaar_contrib_audit-0.3.0rc21-py3-none-any.whl", hash = "sha256:9c863149f5070dffbca60682b9764553cea67969b8ab4d22bdccac4eb17559f2", size = 7565, upload-time = "2026-11-08T05:07:13.504Z" },
+]
+
+[[package]]
+name = "bazaar-contrib-channel"
+version = "0.3.0rc21"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "bazaar-contrib-harness" },
+    { name = "bazaar-contrib-timer" },
+    { name = "bazaar-core" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d8/9c/cc033227ccc1936d04b6ba2e4949a1ee4b2dadb355ca1ff55d958db79dbb/bazaar_contrib_channel-0.3.0rc21.tar.gz", hash = "sha256:f232a1917e3a3303f8970ba973cec7d326c65d1703173ded545b31f0cf045b25", size = 11931, upload-time = "2026-11-08T05:07:30.424Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ed/19/f61c08fa6c8ab7de988cd1e0bef78e665c0a8f637af9e367a611a7f7890e/bazaar_contrib_channel-0.3.0rc21-py3-none-any.whl", hash = "sha256:6ef759a8b8a0faa4f700070129efd18ceac7bd2784b1e80b2e2ff170d07776ec", size = 15380, upload-time = "2026-11-08T05:07:29.336Z" },
 ]
 
 [[package]]
@@ -85,6 +100,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c0/f2/e3bb1ad936a30cdb39e4ff5b26793018825e41f8917435d084a0ab382774/bazaar_contrib_config_versions-0.3.0rc17.tar.gz", hash = "sha256:75bced564fe2ff64b8ee8de1e06a2c2b6c7a435d6a7203dac15166cbde27ef44", size = 10970, upload-time = "2026-11-04T03:25:38.82Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f2/2c/5ba098cae9e770c651375dd7fd850708ae215911e8d9d3150ab6d6ae80a9/bazaar_contrib_config_versions-0.3.0rc17-py3-none-any.whl", hash = "sha256:9029efafa6614849c777d45e05c5ea94c7fa8398f6c79bc557ee82eee7aef0d3", size = 13061, upload-time = "2026-11-04T03:25:37.909Z" },
+]
+
+[[package]]
+name = "bazaar-contrib-harness"
+version = "0.3.0rc21"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "bazaar-core" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b6/3f/2f9c6c59ccbf1a733f55edbb776ad537136899356b892cedfd4f2cbe1f77/bazaar_contrib_harness-0.3.0rc21.tar.gz", hash = "sha256:a02814a05a79d4c0641373f62d969a7a872a43250862cd80064c5c71d46944cc", size = 10540, upload-time = "2026-11-08T05:07:16.655Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/fb/7e46458a9dcf7c7c47ba155664bdd67c0ba7faa9373074c9aa379d54504e/bazaar_contrib_harness-0.3.0rc21-py3-none-any.whl", hash = "sha256:777afe7681d6ce83d6aa3b9100ff8bbb8e2adfea0368760a130c9829a663f9c0", size = 13565, upload-time = "2026-11-08T05:07:15.815Z" },
 ]
 
 [[package]]
@@ -863,19 +891,25 @@ version = "0.1.0"
 source = { editable = "tests/fixtures/ends" }
 dependencies = [
     { name = "bazaar-contrib-audit" },
+    { name = "bazaar-contrib-channel" },
+    { name = "bazaar-contrib-harness" },
     { name = "bazaar-contrib-server" },
     { name = "bazaar-contrib-server-computer" },
     { name = "bazaar-contrib-sidecar" },
     { name = "bazaar-core" },
+    { name = "pydantic" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "bazaar-contrib-audit", specifier = "~=0.3.0rc1" },
+    { name = "bazaar-contrib-audit", specifier = "~=0.3.0rc20" },
+    { name = "bazaar-contrib-channel", specifier = "~=0.3.0rc20" },
+    { name = "bazaar-contrib-harness", specifier = "~=0.3.0rc19" },
     { name = "bazaar-contrib-server", specifier = "~=0.3.0rc3" },
     { name = "bazaar-contrib-server-computer", specifier = "~=0.3.0rc1" },
     { name = "bazaar-contrib-sidecar", specifier = "~=0.3.0rc7" },
     { name = "bazaar-core", specifier = "~=0.3.0rc1" },
+    { name = "pydantic", specifier = ">=2.12.0" },
 ]
 
 [[package]]
