@@ -5,15 +5,20 @@ description = "What the two-end acceptance drives on the server and on the node"
 requires-python = ">=3.15"
 dependencies = [
     "bazaar-core~=0.3.0rc1",
-    "bazaar-contrib-audit~=0.3.0rc1",
+    "bazaar-contrib-audit~=0.3.0rc20",
+    "bazaar-contrib-channel~=0.3.0rc20",
+    "bazaar-contrib-harness~=0.3.0rc19",
     "bazaar-contrib-sidecar~=0.3.0rc7",
     "bazaar-contrib-server~=0.3.0rc3",
     "bazaar-contrib-server-computer~=0.3.0rc1",
+    "pydantic>=2.12.0",
 ]
 
 [project.entry-points."bazaar_compute_node.contribs"]
 ends-node = "two_ends.node:speaker"
 ends-server = "two_ends.server:probe"
+ends-channel-builder = "two_ends.agent:channel_builder"
+ends-runtime-builder = "two_ends.agent:runtime_builder"
 
 [project.entry-points."bazaar_compute_node.remotes"]
 ends = "two_ends.node:remote"

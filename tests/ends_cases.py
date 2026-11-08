@@ -1,5 +1,7 @@
 """Run the server and a node as their installed hosts, each in a `bcn run` of
-its own or both in one, connected the way the server's enrolment page says."""
+its own or both in one, connected the way the server's enrolment page says;
+in runs of their own, an agent is made, changed and removed from the server's
+pages."""
 
 from __future__ import annotations
 
@@ -11,6 +13,7 @@ lazy import re
 lazy import signal
 lazy import sqlite3
 lazy import sys
+lazy import tomllib
 lazy from collections.abc import AsyncIterator, Awaitable, Callable
 lazy from importlib.metadata import version
 lazy from pathlib import Path
@@ -232,6 +235,43 @@ async def speak(node: Path, word: str, monkeypatch: pytest.MonkeyPatch) -> None:
         await clients[0].call("ends", "speak", word)
 
 
+def hidden(page: str, name: str) -> str:
+    """A hidden field of the page's form, as the browser would send it."""
+    found = re.search(rf"name=\"{name}\" value='([^']*)'", page) or re.search(
+        rf'name="{name}" value="([^"]*)"', page
+    )
+    assert found, page[:3000]
+    return found.group(1)
+
+
+async def making(session: httpx.AsyncClient, url: str, page: str, **fields: str) -> str:
+    """The next step of making an agent; once made, where its page is."""
+    answer = await session.post(
+        f"{url}/ui/agents/new",
+        data={
+            "draft": hidden(page, "draft"),
+            "step": hidden(page, "step"),
+            "opened": hidden(page, "opened"),
+            **fields,
+        },
+    )
+    assert answer.status_code in (200, 204), answer.text[:3000]
+    return answer.text if answer.status_code == 200 else answer.headers["hx-redirect"]
+
+
+def agents_on(home: Path) -> list[dict[str, Any]]:
+    """The agents the node's configuration holds."""
+    document = tomllib.loads(
+        (home / ".bcn" / "config.toml").read_text(encoding="utf-8")
+    )
+    return next(
+        entry.get("config", {}).get("agents", [])
+        for package in document["contribs"]
+        for entry in package.get("enabled", ())
+        if entry["entry"] == "agent"
+    )
+
+
 async def until(
     check: Callable[[], Awaitable[object] | object], seconds: float = 120
 ) -> None:
@@ -257,7 +297,12 @@ async def test_a_server_and_a_node_in_runs_of_their_own(
         server_home, await asyncio.to_thread(server_defaults), port, "ends-server"
     )
     await configure(
-        node_home, await asyncio.to_thread(node_defaults), port, "ends-node"
+        node_home,
+        await asyncio.to_thread(node_defaults),
+        port,
+        "ends-node",
+        "ends-channel-builder",
+        "ends-runtime-builder",
     )
     async with hosts(server_home, node_home) as (server, node), browser() as admin:
         await server.start()
@@ -278,6 +323,76 @@ async def test_a_server_and_a_node_in_runs_of_their_own(
         }
         assert "value" in await ask(admin, url, ref, "ends.speak", "hello")
         await until(lambda: heard(admin, url, "hello"))
+
+        # an agent made from the pages is written to the node's configuration
+        # and runs there
+        page = (await admin.get(f"{url}/ui/agents/new")).text
+        chosen = re.search(r'name="computer" value="(\d+)"', page)
+        assert chosen, page[:3000]
+        page = await making(
+            admin,
+            url,
+            page,
+            name="kana",
+            idle_timeout="0",
+            mode="session",
+            sandbox="workspace-write",
+            computer=chosen.group(1),
+            action="go:2",
+        )
+        page = await making(admin, url, page, action="add:channel:ends-channel")
+        page = await making(
+            admin,
+            url,
+            page,
+            **{"f.bot": "kana-bot", "s.token": "tok-1", "action": "go:3"},
+        )
+        page = await making(admin, url, page, action="add:harness:ends-runtime")
+        page = await making(admin, url, page, action="go:4")
+        made = await making(admin, url, page, action="create")
+        assert made.startswith("/ui/agents/"), made
+        (kana,) = await asyncio.to_thread(agents_on, node_home)
+        assert kana["name"] == "kana"
+        assert kana["channel"][0] == {
+            "kind": "ends-channel",
+            "bot": "kana-bot",
+            "token": "tok-1",
+        }
+
+        async def running() -> bool:
+            activity = (await ask(admin, url, ref, "agent-activity.agents"))["value"]
+            known = activity.get(kana["id"])
+            return known is not None and known["state"] == "running"
+
+        await until(running)
+        workspace = node_home / ".bcn" / "workspaces" / kana["id"]
+        await asyncio.to_thread(workspace.mkdir, parents=True, exist_ok=True)
+        await asyncio.to_thread((workspace / "notes.md").write_text, "# notes\n")
+
+        # changed with its token left blank, the token stays
+        tab = (await admin.get(f"{url}{made}?tab=config")).text
+        saved = await admin.post(
+            f"{url}{made}/config",
+            data={
+                "draft": hidden(tab, "draft"),
+                "revision": hidden(tab, "revision"),
+                "name": "kana two",
+                "idle_timeout": "0",
+                "mode": "session",
+                "sandbox": "workspace-write",
+                "action": "save",
+            },
+        )
+        assert saved.status_code == 200, saved.text[:3000]
+        (kana,) = await asyncio.to_thread(agents_on, node_home)
+        assert kana["name"] == "kana two"
+        assert kana["channel"][0]["token"] == "tok-1"
+
+        # removed, its configuration goes and its workspace stays
+        removed = await admin.post(f"{url}{made}/remove")
+        assert removed.status_code == 204, removed.text[:3000]
+        assert await asyncio.to_thread(agents_on, node_home) == []
+        assert await asyncio.to_thread((workspace / "notes.md").exists)
 
         # the node keeps speaking while the server is away
         await server.stop()
