@@ -6,8 +6,8 @@ requires-python = ">=3.15"
 dependencies = [
     "bazaar-core~=0.3.0rc1",
     "bazaar-contrib-audit~=0.3.0rc20",
-    "bazaar-contrib-channel~=0.3.0rc20",
-    "bazaar-contrib-harness~=0.3.0rc19",
+    "bazaar-contrib-channel~=0.3.0rc24",
+    "bazaar-contrib-harness~=0.3.0rc24",
     "bazaar-contrib-sidecar~=0.3.0rc7",
     "bazaar-contrib-server~=0.3.0rc3",
     "bazaar-contrib-server-computer~=0.3.0rc1",
