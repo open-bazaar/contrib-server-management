@@ -2,6 +2,7 @@ version = "5"
 contrib_indexes = [
     "resource://bazaar_contrib_manager/catalog.json",
     "resource://bazaar_contrib_manager/open_bazaar_index.json",
+    "https://raw.githubusercontent.com/open-bazaar/contrib-index/main/index.json",
 ]
 
 [[contribs]]
@@ -17,6 +18,8 @@ entry = "commands"
 package = "bazaar-contrib-manager~=0.3.0rc1"
 [[contribs.enabled]]
 entry = "contrib-manager"
+[[contribs.enabled]]
+entry = "contrib-indexes"
 
 [[contribs]]
 package = "bazaar-contrib-logging~=0.3.0rc1"
@@ -24,7 +27,7 @@ package = "bazaar-contrib-logging~=0.3.0rc1"
 entry = "logging"
 
 [[contribs]]
-package = "bazaar-contrib-timer-wheel~=0.3.0rc1"
+package = "bazaar-contrib-timer~=0.3.0rc1"
 [[contribs.enabled]]
 entry = "timer-wheel"
 
