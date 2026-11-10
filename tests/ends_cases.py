@@ -1,23 +1,28 @@
 """Run the server and a node as their installed hosts, each in a `bcn run` of
 its own or both in one, connected the way the server's enrolment page says;
 in runs of their own, an agent is made, changed and removed from the server's
-pages."""
+pages, and what an agent hears, decides and does shows on them."""
 
 from __future__ import annotations
 
 from contextlib import asynccontextmanager, closing
 lazy import asyncio
+lazy import html
 lazy import inspect
+lazy import json
 lazy import os
 lazy import re
 lazy import signal
 lazy import sqlite3
+lazy import struct
 lazy import sys
 lazy import tomllib
-lazy from collections.abc import AsyncIterator, Awaitable, Callable
+lazy import zlib
+lazy from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 lazy from importlib.metadata import version
 lazy from pathlib import Path
 lazy from typing import Any
+lazy from uuid import uuid7
 
 import httpx
 import pytest
@@ -286,6 +291,150 @@ async def until(
     raise TimeoutError(f"not so after {seconds} seconds")
 
 
+def agent(id: str, name: str) -> dict[str, Any]:
+    """An agent on the fixture's channel and runtime, every conversation its own."""
+    return {
+        "id": id,
+        "name": name,
+        "mode": "dangerous_individual",
+        "channel": [{"kind": "ends-channel", "bot": f"{id}-bot"}],
+        "harness": [{"kind": "ends-runtime"}],
+    }
+
+
+def picture(path: Path) -> bytes:
+    """A small PNG of one colour, written to the path; its bytes."""
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data))
+            + kind
+            + data
+            + struct.pack(">I", zlib.crc32(kind + data))
+        )
+
+    rows = b"".join(b"\x00" + b"\x2f\x81\xf7" * 48 for _ in range(32))
+    content = (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", 48, 32, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(rows))
+        + chunk(b"IEND", b"")
+    )
+    path.write_bytes(content)
+    return content
+
+
+async def say(
+    node: Path,
+    agent_id: str,
+    chat: str,
+    sender: dict[str, str],
+    text: str,
+    *,
+    review: str = "approved",
+    attachments: Sequence[dict[str, str]] = (),
+) -> None:
+    """Leave a message in the agent's inbox, from someone in a chat of two."""
+    inbox = node / "ends" / agent_id / "inbox"
+    await asyncio.to_thread(inbox.mkdir, parents=True, exist_ok=True)
+    message = {
+        "chat": chat,
+        "sender": sender,
+        "text": text,
+        "review": review,
+        "attachments": list(attachments),
+    }
+    # written aside and moved in, so the channel never reads half of it
+    staged = inbox / f"{uuid7()}.part"
+    await asyncio.to_thread(staged.write_text, json.dumps(message))
+    await asyncio.to_thread(staged.rename, staged.with_suffix(".json"))
+
+
+async def hold(node: Path, agent_id: str, held: bool) -> None:
+    """Keep the agent's turns from ending, or let them."""
+    directory = node / "ends" / agent_id
+    await asyncio.to_thread(directory.mkdir, parents=True, exist_ok=True)
+    if held:
+        await asyncio.to_thread((directory / "hold").touch)
+    else:
+        await asyncio.to_thread((directory / "hold").unlink, missing_ok=True)
+
+
+async def calls(node: Path, agent_id: str, made: Sequence[dict[str, Any]]) -> None:
+    """The tool calls the agent's next turns make, as the runtime reports them."""
+    directory = node / "ends" / agent_id
+    await asyncio.to_thread(directory.mkdir, parents=True, exist_ok=True)
+    await asyncio.to_thread((directory / "calls.json").write_text, json.dumps(made))
+
+
+async def sent(node: Path, agent_id: str) -> list[str]:
+    """What the agent sent on its channel, oldest first."""
+    outbox = node / "ends" / agent_id / "outbox.jsonl"
+    if not await asyncio.to_thread(outbox.exists):
+        return []
+    lines = (await asyncio.to_thread(outbox.read_text)).splitlines()
+    return [json.loads(line)["text"] for line in lines]
+
+
+async def act(
+    session: httpx.AsyncClient,
+    url: str,
+    ref: str,
+    node: Path,
+    agent_id: str,
+    service: str,
+    resource: str,
+    command: str,
+    **values: Any,
+) -> dict[str, Any]:
+    """A command the agent runs in its latest session, as bcc runs it, sent
+    through the server to the node."""
+    environment = json.loads(
+        await asyncio.to_thread((node / "ends" / agent_id / "session.json").read_text)
+    )
+    answer = await ask(
+        session,
+        url,
+        ref,
+        f"{service}.request",
+        {
+            "kind": "command",
+            "resource": resource,
+            "command": command,
+            "agent_id": environment["BCN_AGENT_ID"],
+            "actor_id": environment["BCN_ACTOR_ID"],
+            "runtime_session_id": environment["BCN_RUNTIME_SESSION_ID"],
+            "session_capability": environment["BCN_COMMAND_CAPABILITY"],
+            **values,
+        },
+    )
+    return answer["value"]
+
+
+async def page(session: httpx.AsyncClient, url: str, path: str) -> str:
+    answer = await session.get(f"{url}{path}")
+    assert answer.status_code == 200, (answer.status_code, answer.text[:3000])
+    return answer.text
+
+
+async def shows(session: httpx.AsyncClient, url: str, path: str, *texts: str) -> bool:
+    """Whether the page has all the texts yet."""
+    answer = await session.get(f"{url}{path}")
+    return answer.status_code == 200 and all(text in answer.text for text in texts)
+
+
+def opened(listing: str, name: str) -> str:
+    """Where a conversation the list shows opens, as its agent's ref and its own."""
+    for address, row in re.findall(
+        r'<a class="conv" href="/ui/chats/(\d+/\d+)[^"]*"(.*?)</a>',
+        listing,
+        re.DOTALL,
+    ):
+        if f'class="tn">{name}<' in row:
+            return address
+    raise AssertionError(listing[:3000])
+
+
 async def test_a_server_and_a_node_in_runs_of_their_own(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
@@ -453,3 +602,215 @@ async def test_a_server_and_a_node_in_one_run(tmp_path: Path):
         assert any("computers" in name for name in kept)
         assert not any("computers" in name for name in apart)
         await host.stop()
+
+
+KANA = agent("kana", "有马佳奈")
+YU = {"id": "u-yu", "name": "yuchanns", "display_name": "yuchanns"}
+LI = {"id": "u-li", "name": "lilei", "display_name": "李雷"}
+
+
+async def test_what_an_agent_hears_decides_and_does_shows_on_the_server(
+    tmp_path: Path,
+):
+    server_home, node_home = tmp_path / "server", tmp_path / "node"
+    (port,) = await asyncio.to_thread(ports, 1)
+    url = f"http://127.0.0.1:{port}"
+    release = await asyncio.to_thread(version, "bazaar-compute")
+    await configure(
+        server_home, await asyncio.to_thread(server_defaults), port, "ends-server"
+    )
+    document = await asyncio.to_thread(node_defaults)
+    for package in document["contribs"]:
+        for entry in package.get("enabled", ()):
+            if entry["entry"] == "agent":
+                entry["config"]["agents"] = [KANA]
+    await configure(
+        node_home,
+        document,
+        port,
+        "ends-node",
+        "ends-channel-builder",
+        "ends-runtime-builder",
+    )
+    content = await asyncio.to_thread(picture, tmp_path / "schedule.png")
+    async with hosts(server_home, node_home) as (server, node), browser() as admin:
+        await server.start()
+        secret = password(server)
+        await login(admin, url, secret)
+        ref, token = await enrol(admin, url, "kana-vm")
+        await node.start()
+        await connect(node_home, url, token)
+        await until(lambda: online(admin, url, ref, release))
+
+        # a first contact waits for a decision on the conversations page and on
+        # the overview; the node is given its side of the conversations the
+        # first time they are read
+        await say(
+            node_home, "kana", "lilei", LI, "你好，想请你看看排期", review="pending"
+        )
+        await until(lambda: shows(admin, url, "/ui/chats/?tab=contacts", "李雷"), 300)
+        await until(lambda: shows(admin, url, "/ui/chats/attention", "李雷"))
+        address = opened(await page(admin, url, "/ui/chats/?tab=contacts"), "李雷")
+        let_in = await admin.post(
+            f"{url}/ui/chats/{address}/review?tab=contacts",
+            data={"decision": "approved", "on": "page"},
+        )
+        assert let_in.status_code == 204, let_in.text[:3000]
+
+        # let in, the picture that comes next is read from the node, and a turn
+        # of the agent runs a command and replies
+        await hold(node_home, "kana", True)
+        await calls(
+            node_home,
+            "kana",
+            [
+                {
+                    "call_id": "c-1",
+                    "name": "Bash",
+                    "duration_ms": 800,
+                    "detail": {
+                        "kind": "command",
+                        "command": "git fetch",
+                        "exit_code": 0,
+                    },
+                }
+            ],
+        )
+        await say(
+            node_home,
+            "kana",
+            "lilei",
+            LI,
+            "排期在图里，能对上吗？",
+            attachments=[
+                {"path": str(tmp_path / "schedule.png"), "media_type": "image/png"}
+            ],
+        )
+        await until(
+            lambda: shows(admin, url, f"/ui/chats/{address}", "/ui/chats/files/")
+        )
+        image = re.search(
+            r'<img src="(/ui/chats/files/[^"]+)"',
+            await page(admin, url, f"/ui/chats/{address}"),
+        )
+        assert image is not None
+        fetched = await admin.get(f"{url}{html.unescape(image.group(1))}")
+        assert fetched.status_code == 200 and fetched.content == content
+        heard: list[dict[str, Any]] = []
+
+        async def checked() -> bool:
+            session = node_home / "ends" / "kana" / "session.json"
+            if not await asyncio.to_thread(session.exists):
+                return False
+            found = await act(
+                admin, url, ref, node_home, "kana", "messages", "message", "check"
+            )
+            heard.extend(found["result"]["messages"])
+            return bool(heard)
+
+        await until(checked)
+        replied = await act(
+            admin,
+            url,
+            ref,
+            node_home,
+            "kana",
+            "messages",
+            "message",
+            "send",
+            target=heard[-1]["target"],
+            body="能对上，按排期来",
+        )
+        assert replied["ok"], replied
+        await hold(node_home, "kana", False)
+
+        async def answered() -> bool:
+            return "能对上，按排期来" in await sent(node_home, "kana")
+
+        await until(answered)
+
+        # the turn, its command, what it used and the reply show in the
+        # agent's activity, its whole record, the market's feed and the overview
+        kana = address.split("/")[0]
+        await until(
+            lambda: shows(
+                admin,
+                url,
+                f"/ui/activity/log/{kana}",
+                "Started on",
+                "git fetch",
+                "Replied in",
+                "Turn done",
+            )
+        )
+        await until(
+            lambda: shows(admin, url, f"/ui/activity/today/{kana}", "DM with 李雷")
+        )
+        await until(lambda: shows(admin, url, f"/ui/activity/usage/{kana}", "$0.0"))
+        await until(
+            lambda: shows(
+                admin,
+                url,
+                "/ui/activity/feed",
+                "started on",
+                "replied",
+                "ran 1 commands",
+            )
+        )
+        await until(lambda: shows(admin, url, "/ui/usage/", "k tokens", "$0.0"))
+
+        # turned away again, the node holds the conversation denied
+        listed = await ask(
+            admin, url, ref, "conversation.conversations", "kana", "approved", 0, 50
+        )
+        (thread_id,) = [item["thread_id"] for item in listed["value"]["conversations"]]
+        revoked = await admin.post(
+            f"{url}/ui/chats/{address}/review",
+            data={"decision": "denied", "on": "page"},
+        )
+        assert revoked.status_code == 204, revoked.text[:3000]
+        held = await ask(
+            admin, url, ref, "conversation.conversation", "kana", thread_id
+        )
+        assert held["value"]["conversation"]["review"] == "denied"
+
+        # a turn while the server is away comes in once it is back, and what
+        # was recorded before stays recorded once
+        turns = (await page(admin, url, f"/ui/activity/log/{kana}")).count("Started on")
+        await server.stop()
+        await until(lambda: node.said(rb'"event_name":"starlink.failed"'))
+        done = len(re.findall(rb'"event_name":"harness.completed"', node.output))
+        await calls(node_home, "kana", [])
+        await say(node_home, "kana", "yuchanns", YU, "晚上开会吗？")
+        await until(
+            lambda: (
+                len(re.findall(rb'"event_name":"harness.completed"', node.output))
+                > done
+            )
+        )
+        await server.start()
+        await login(admin, url, secret)
+
+        async def recovered() -> bool:
+            events = await reported(admin, url)
+            return any(event["event"] == "starlink.recovered" for event in events)
+
+        await until(recovered)
+
+        async def counted() -> int:
+            record = await page(admin, url, f"/ui/activity/log/{kana}")
+            return record.count("Started on")
+
+        async def caught_up() -> bool:
+            return await counted() > turns
+
+        await until(caught_up)
+        assert await counted() == turns + 1
+
+        # stopped, the computer leaves the market's feed a minute later
+        await node.stop()
+        await until(
+            lambda: shows(admin, url, "/ui/activity/feed", "kana-vm", "disconnected"),
+            180,
+        )
+        await server.stop()
