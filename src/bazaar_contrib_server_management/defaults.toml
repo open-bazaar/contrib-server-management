@@ -96,5 +96,22 @@ package = "bazaar-contrib-server-agent~=0.3.0rc1"
 entry = "server-agent"
 
 [[contribs]]
+package = "bazaar-contrib-server-activity~=0.3.0rc2"
+[[contribs.enabled]]
+entry = "server-activity"
+[contribs.enabled.config]
+retention_days = 30
+
+[[contribs]]
+package = "bazaar-contrib-server-conversation~=0.3.0rc1"
+[[contribs.enabled]]
+entry = "server-conversation"
+
+[[contribs]]
+package = "bazaar-contrib-server-usage~=0.3.0rc1"
+[[contribs.enabled]]
+entry = "server-usage"
+
+[[contribs]]
 package = "bazaar-contrib-server-management~=0.3.0rc1"
 enabled = []

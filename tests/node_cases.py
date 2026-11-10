@@ -16,7 +16,8 @@ def configured(payload: dict[str, Any]) -> dict[str, object]:
         for package in payload["contribs"]
         for entry in package.get("enabled", ())
         # the entries that carry over ~/.bcs's settings
-        if entry["entry"] not in ("http", "server-database", "server-access")
+        if entry["entry"]
+        not in ("http", "server-database", "server-access", "server-activity")
     }
 
 

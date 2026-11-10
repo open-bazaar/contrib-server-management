@@ -29,6 +29,9 @@ def defaults() -> dict[str, Any]:
         "server-access": {"session_minutes": payload["session_minutes"]}
         if "session_minutes" in payload
         else {},
+        "server-activity": {"retention_days": payload["retention_days"]}
+        if "retention_days" in payload
+        else {},
     }
     for package in document["contribs"]:
         for entry in package.get("enabled", ()):
