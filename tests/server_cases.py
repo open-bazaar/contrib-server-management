@@ -20,6 +20,9 @@ async def test_a_new_server_serves_with_the_original_defaults(tmp_path: Path):
         assert "server-computer" in configured
         assert "server-relay-memory" in configured
         assert "server-agent" in configured
+        assert configured["server-activity"]["retention_days"] == 30
+        assert "server-conversation" in configured
+        assert "server-usage" in configured
 
 
 async def test_a_02_server_keeps_its_settings(tmp_path: Path):
@@ -32,3 +35,4 @@ async def test_a_02_server_keeps_its_settings(tmp_path: Path):
         assert configured["http"]["listen"] == f"127.0.0.1:{published}"
         assert configured["server-database"]["storage"] == "sqlite"
         assert configured["server-access"]["session_minutes"] == 25
+        assert configured["server-activity"]["retention_days"] == 7
