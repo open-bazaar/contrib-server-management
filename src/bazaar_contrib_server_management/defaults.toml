@@ -113,5 +113,10 @@ package = "bazaar-contrib-server-usage~=0.3.0rc1"
 entry = "server-usage"
 
 [[contribs]]
+package = "bazaar-contrib-server-market~=0.3.0rc1"
+[[contribs.enabled]]
+entry = "server-market"
+
+[[contribs]]
 package = "bazaar-contrib-server-management~=0.3.0rc1"
 enabled = []

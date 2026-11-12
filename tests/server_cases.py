@@ -23,6 +23,7 @@ async def test_a_new_server_serves_with_the_original_defaults(tmp_path: Path):
         assert configured["server-activity"]["retention_days"] == 30
         assert "server-conversation" in configured
         assert "server-usage" in configured
+        assert "server-market" in configured
 
 
 async def test_a_02_server_keeps_its_settings(tmp_path: Path):
