@@ -27,6 +27,11 @@ package = "bazaar-contrib-logging~=0.3.0rc1"
 entry = "logging"
 
 [[contribs]]
+package = "bazaar-contrib-status~=0.3.0rc32"
+[[contribs.enabled]]
+entry = "status"
+
+[[contribs]]
 package = "bazaar-contrib-timer~=0.3.0rc1"
 [[contribs.enabled]]
 entry = "timer-wheel"
